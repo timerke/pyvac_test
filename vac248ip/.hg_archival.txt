@@ -1,0 +1,6 @@
+repo: 94f536923aed0170b39ca19277030f9ccfb79b94
+node: 72471b9eb9ed715bac90782eba092fc3920448f4
+branch: dev-1.6
+latesttag: Version 1.6.3
+latesttagdistance: 2
+changessincelatesttag: 2

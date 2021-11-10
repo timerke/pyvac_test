@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>614</width>
+    <width>517</width>
     <height>404</height>
    </rect>
   </property>
@@ -18,9 +18,16 @@
     <item>
      <layout class="QHBoxLayout" name="horizontal_layout">
       <item>
+       <widget class="QLabel" name="label_ip_address">
+        <property name="text">
+         <string>IP адрес</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QLineEdit" name="line_edit_ip_address">
         <property name="placeholderText">
-         <string>000.000.000.000</string>
+         <string>0.0.0.0[:0]</string>
         </property>
        </widget>
       </item>
@@ -41,24 +48,8 @@
         <property name="text">
          <string>Подключить</string>
         </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="button_start_or_stop_test">
-        <property name="minimumSize">
-         <size>
-          <width>100</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>100</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>Старт</string>
+        <property name="checkable">
+         <bool>true</bool>
         </property>
        </widget>
       </item>
@@ -104,6 +95,9 @@
             <height>100</height>
            </size>
           </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
          </widget>
         </item>
         <item>
@@ -115,7 +109,7 @@
            <bool>false</bool>
           </property>
           <property name="value">
-           <number>24</number>
+           <number>0</number>
           </property>
           <property name="textVisible">
            <bool>true</bool>
@@ -128,10 +122,39 @@
        </layout>
       </item>
       <item>
-       <layout class="QVBoxLayout" name="vertical_layout_2" stretch="0,0">
+       <layout class="QVBoxLayout" name="vertical_layout_2" stretch="0,0,0,0">
         <property name="sizeConstraint">
          <enum>QLayout::SetMinimumSize</enum>
         </property>
+        <item>
+         <widget class="QPushButton" name="button_start_or_stop_tests">
+          <property name="minimumSize">
+           <size>
+            <width>100</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>100</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Старт</string>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="button_restart_tests">
+          <property name="text">
+           <string>Начать заново</string>
+          </property>
+         </widget>
+        </item>
         <item>
          <widget class="QPushButton" name="button_call_failure">
           <property name="minimumSize">
@@ -191,7 +214,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>614</width>
+     <width>517</width>
      <height>21</height>
     </rect>
    </property>

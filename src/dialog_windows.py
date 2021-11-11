@@ -2,10 +2,11 @@
 File with classes for dialog windows.
 """
 
+import os
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt
-from PyQt5.QtGui import QCloseEvent
 from PyQt5.QtWidgets import (QComboBox, QDialog, QFormLayout, QHBoxLayout, QLayout, QPushButton,
                              QSpinBox, QVBoxLayout)
+from PyQt5.uic import loadUi
 from . import config as cn
 
 
@@ -116,9 +117,37 @@ class TestSettingsWindow(QDialog):
     Class for dialog window to set settings for tests.
     """
 
-    def __init__(self, parent: "MainWindow"):
+    test_settings_received = pyqtSignal(dict)
+
+    def __init__(self, parent: "MainWindow", settings: dict):
         """
-        :param parent: main window of application.
+        :param parent: main window of application;
+        :param settings: dictionary with settings of tests.
         """
 
-        super().__init__(parent=parent)
+        super().__init__(parent, Qt.WindowTitleHint | Qt.WindowCloseButtonHint)
+        self._init_ui(settings)
+
+    def _init_ui(self, settings: dict):
+        """
+        Method initializes widgets on window.
+        :param settings: dictionary with settings of tests.
+        """
+
+        dir_name = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        file_name = os.path.join(dir_name, "gui", "test_settings_window.ui")
+        loadUi(file_name, self)
+        self.setWindowTitle("Настройки тестов")
+        self.layout().setSizeConstraint(QLayout.SetFixedSize)
+        self.adjustSize()
+
+        self.button_set_settings.clicked.connect(self.set_settings)
+
+    @pyqtSlot()
+    def set_settings(self):
+        """
+        Slot emits settings for tests.
+        """
+
+        settings =
+        self.test_settings_received.emit()

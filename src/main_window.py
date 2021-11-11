@@ -287,8 +287,8 @@ class MainWindow(QMainWindow):
         Slot shows dialog window with settings for tests.
         """
 
-        dialog_wnd = TestSettingsWindow(self)
-        dialog_wnd.show()
+        dialog_wnd = TestSettingsWindow(self, {})
+        dialog_wnd.exec()
 
     @pyqtSlot(int, int, dict)
     def show_test_result(self, index: int, tests_id: int, result: dict):

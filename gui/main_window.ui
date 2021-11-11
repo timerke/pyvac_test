@@ -13,8 +13,20 @@
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
-  <widget class="QWidget" name="centralwidget">
+  <widget class="QWidget" name="central_widget">
    <layout class="QVBoxLayout" name="verticalLayout_3">
+    <property name="leftMargin">
+     <number>9</number>
+    </property>
+    <property name="topMargin">
+     <number>9</number>
+    </property>
+    <property name="rightMargin">
+     <number>9</number>
+    </property>
+    <property name="bottomMargin">
+     <number>9</number>
+    </property>
     <item>
      <layout class="QHBoxLayout" name="horizontal_layout">
       <item>
@@ -218,7 +230,25 @@
      <height>21</height>
     </rect>
    </property>
+   <widget class="QMenu" name="menu">
+    <property name="title">
+     <string>Настройки</string>
+    </property>
+    <addaction name="action_test_settings"/>
+    <addaction name="action_default_values"/>
+   </widget>
+   <addaction name="menu"/>
   </widget>
+  <action name="action_test_settings">
+   <property name="text">
+    <string>Настройки тестов</string>
+   </property>
+  </action>
+  <action name="action_default_values">
+   <property name="text">
+    <string>Значения по умолчанию</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>

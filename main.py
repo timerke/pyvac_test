@@ -2,11 +2,36 @@
 File to run application.
 """
 
+import logging
+import os
 import sys
 import traceback
 from PyQt5.QtCore import pyqtSignal, QObject
 from PyQt5.QtWidgets import QApplication, QMessageBox
 from src.main_window import MainWindow
+
+
+def create_logger() -> logging.Logger:
+    """
+    Function creates logger for application.
+    :return: logger.
+    """
+
+    formatter = logging.Formatter("%(asctime)s - %(message)s")
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
+    stream_handler.setLevel(logging.INFO)
+    dir_name = os.path.dirname(os.path.abspath(__file__))
+    file_name = os.path.join(dir_name, "logs.log")
+    file_handler = logging.FileHandler(file_name)
+    file_handler.setFormatter(formatter)
+    file_handler.setLevel(logging.INFO)
+    logger = logging.getLogger("pyvac_test")
+    logger.addHandler(stream_handler)
+    logger.addHandler(file_handler)
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+    return logger
 
 
 def show_exception(msg_title: str, msg_text: str, exc: str = ""):
@@ -50,6 +75,7 @@ class ExceptionHandler(QObject):
 
 if __name__ == "__main__":
 
+    create_logger()
     app = QApplication(sys.argv)
     exceprion_handler = ExceptionHandler()
     sys.excepthook = exceprion_handler.exception_hook

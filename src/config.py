@@ -2,7 +2,7 @@
 File with parameters of camera.
 """
 
-from typing import Union
+from typing import Optional, Union
 from enum import auto, Enum
 from vac248ip import Vac248IpGamma, Vac248IpShutter, Vac248IpVideoFormat
 
@@ -33,7 +33,7 @@ class CameraParameters(Enum):
 
     @classmethod
     def get_value(cls, param: "CameraParameters", value: int) ->\
-            Union[int, Vac248IpGamma, Vac248IpShutter, Vac248IpVideoFormat]:
+            Optional[Union[int, Vac248IpGamma, Vac248IpShutter, Vac248IpVideoFormat]]:
         """
         Method converts value of parameter.
         :param param: parameter;
@@ -41,18 +41,72 @@ class CameraParameters(Enum):
         :return: converted value.
         """
 
-        if param == CameraParameters.GAMMA:
-            value = Vac248IpGamma(value)
-        elif param == CameraParameters.SHUTTER:
-            value = Vac248IpShutter(value)
-        elif param == CameraParameters.VIDEO_FORMAT:
-            value = Vac248IpVideoFormat(value)
+        if param not in cls.get_all_parameters():
+            return None
+        try:
+            if param == CameraParameters.GAMMA:
+                return Vac248IpGamma(value)
+            if param == CameraParameters.SHUTTER:
+                return Vac248IpShutter(value)
+            if param == CameraParameters.VIDEO_FORMAT:
+                return Vac248IpVideoFormat(value)
+            value = int(value)
+        except ValueError:
+            return CAMERA_PARAMETERS[param][DEFAULT]
+        if value < CAMERA_PARAMETERS[param][MIN]:
+            return CAMERA_PARAMETERS[param][MIN]
+        if value > CAMERA_PARAMETERS[param][MAX]:
+            return CAMERA_PARAMETERS[param][MAX]
+        return value
+
+
+class TestSettings(Enum):
+    """
+    Class with settings for tests.
+    """
+
+    DELAY = auto()
+    CONTRAST = auto()
+    EXPOSURE = auto()
+    GAIN_ANALOG = auto()
+    GAIN_DIGITAL = auto()
+    MAX_GAIN_AUTO = auto()
+
+    @classmethod
+    def get_all_parameters(cls) -> tuple:
+        """
+        Method returns names of all parameters (attributes of given class).
+        :return: names of all parameters.
+        """
+
+        return cls.DELAY, cls.EXPOSURE, cls.GAIN_ANALOG, cls.GAIN_DIGITAL, cls.MAX_GAIN_AUTO
+
+    @classmethod
+    def get_value(cls, setting: "TestSettings", value: int) -> Optional[int]:
+        """
+        Method returns correct value for given setting.
+        :param setting: setting;
+        :param value: integer value.
+        :return: correct value of setting.
+        """
+
+        if setting not in cls.get_all_parameters():
+            return None
+        try:
+            value = int(value)
+        except ValueError:
+            return TEST_SETTINGS[setting][VALUE]
+        if value < TEST_SETTINGS[setting][MIN]:
+            return TEST_SETTINGS[setting][MIN]
+        if value > TEST_SETTINGS[setting][MAX]:
+            return TEST_SETTINGS[setting][MAX]
         return value
 
 
 DEFAULT = "default"
 MAX = "max"
 MIN = "min"
+VALUE = "value"
 VALUES = "values"
 
 CONTRAST_DEFAULT = 0
@@ -99,6 +153,15 @@ CAMERA_PARAMETERS = {
     CameraParameters.VIDEO_FORMAT: {DEFAULT: VIDEO_FORMAT,
                                     VALUES: (Vac248IpVideoFormat.FORMAT_960x600,
                                              Vac248IpVideoFormat.FORMAT_1920x1200)}
+}
+
+TEST_SETTINGS = {
+    TestSettings.DELAY: {VALUE: 2, MIN: 0, MAX: 10},
+    TestSettings.CONTRAST: {VALUE: 2, MIN: 1, MAX: 10},
+    TestSettings.EXPOSURE: {VALUE: 2, MIN: 1, MAX: 10},
+    TestSettings.GAIN_ANALOG: {VALUE: 2, MIN: 1, MAX: 4},
+    TestSettings.GAIN_DIGITAL: {VALUE: 2, MIN: 1, MAX: 10},
+    TestSettings.MAX_GAIN_AUTO: {VALUE: 2, MIN: 1, MAX: 10}
 }
 
 CONFIG_FILE = "config.ini"

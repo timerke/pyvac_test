@@ -15,7 +15,7 @@ class DefaultValueWindow(QDialog):
     Class for dialog window to set default values for camera parameters.
     """
 
-    default_values_received = pyqtSignal(dict)
+    values_received = pyqtSignal(dict)
 
     def __init__(self, parent: "MainWindow", params_info: dict):
         """
@@ -108,7 +108,7 @@ class DefaultValueWindow(QDialog):
                 default[param] = widget.currentData()
             else:
                 default[param] = widget.value()
-        self.default_values_received.emit(default)
+        self.values_received.emit(default)
         self.close()
 
 
@@ -117,7 +117,7 @@ class TestSettingsWindow(QDialog):
     Class for dialog window to set settings for tests.
     """
 
-    test_settings_received = pyqtSignal(dict)
+    values_received = pyqtSignal(dict)
 
     def __init__(self, parent: "MainWindow", settings: dict):
         """
@@ -140,8 +140,16 @@ class TestSettingsWindow(QDialog):
         self.setWindowTitle("Настройки тестов")
         self.layout().setSizeConstraint(QLayout.SetFixedSize)
         self.adjustSize()
-
+        self._widgets = {cn.TestSettings.DELAY: self.spin_box_delay,
+                         cn.TestSettings.CONTRAST: self.spin_box_contrast,
+                         cn.TestSettings.EXPOSURE: self.spin_box_exposure,
+                         cn.TestSettings.GAIN_ANALOG: self.spin_box_gain_analog,
+                         cn.TestSettings.GAIN_DIGITAL: self.spin_box_gain_digital,
+                         cn.TestSettings.MAX_GAIN_AUTO: self.spin_box_max_gain_auto}
+        for setting, spin_box in self._widgets.items():
+            spin_box.setValue(settings[setting][cn.VALUE])
         self.button_set_settings.clicked.connect(self.set_settings)
+        self.button_cancel.clicked.connect(self.close)
 
     @pyqtSlot()
     def set_settings(self):
@@ -149,5 +157,6 @@ class TestSettingsWindow(QDialog):
         Slot emits settings for tests.
         """
 
-        settings =
-        self.test_settings_received.emit()
+        settings = {setting: spin_box.value() for setting, spin_box in self._widgets.items()}
+        self.values_received.emit(settings)
+        self.close()

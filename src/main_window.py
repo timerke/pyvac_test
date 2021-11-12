@@ -31,7 +31,7 @@ class MainWindow(QMainWindow):
         self._camera: Vac248IpCamera = None
         dir_name = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self._config_file = os.path.join(dir_name, cn.CONFIG_FILE)
-        self._camera_params: dict = ut.get_info_about_parameters(self._config_file)
+        self._camera_params: dict = {}
         self._current_test_failed_by_user: bool = False
         self._ip_address: str = None
         self._logger: logging.Logger = logging.getLogger("pyvac_test")
@@ -39,9 +39,11 @@ class MainWindow(QMainWindow):
         self._start_number: int = -1
         self._temp_tests: Tests = None
         self._test_index: int = 0
+        self._test_settings: dict = {}
         self._tests: Tests = Tests(self._camera, self._camera_params)
         self._tests_number: int = self._tests.get_tests_number()
         self._thread: QThread = None
+        self._camera_params, self._test_settings = ut.get_info_about_parameters(self._config_file)
         self._init_ui()
 
     def _analyze_test_result(self, result: dict):
@@ -124,8 +126,8 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("pyvac_test")
         icon = QIcon(os.path.join(dir_name, "gui", "icon.png"))
         self.setWindowIcon(icon)
-        self.action_test_settings.triggered.connect(self.show_test_settings)
-        self.action_default_values.triggered.connect(self.show_default_values)
+        self.action_test_settings.triggered.connect(self.show_dialog_window_to_set_values)
+        self.action_default_values.triggered.connect(self.show_dialog_window_to_set_values)
         reg_exp = QRegExp("^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(:\d+)?$")
         validator = QRegExpValidator(reg_exp, self)
         self.line_edit_ip_address.setValidator(validator)
@@ -253,15 +255,21 @@ class MainWindow(QMainWindow):
             self._logger.info("Tests were started")
 
     @pyqtSlot(dict)
-    def set_default_values(self, default: dict):
+    def set_default_values_and_test_settings(self, dict_with_values: dict):
         """
-        Slot sets new default values for camera parameters.
-        :param default: dictionary with new default values.
+        Slot sets new default values for camera parameters or new test settings.
+        :param dict_with_values: dictionary with new values.
         """
 
-        for param, new_value in default.items():
-            self._camera_params[param][cn.DEFAULT] = new_value
-        ut.write_config_file(self._config_file, self._camera_params)
+        if cn.CameraParameters.CONTRAST in dict_with_values:
+            required_dict = self._camera_params
+            key = cn.DEFAULT
+        else:
+            required_dict = self._test_settings
+            key = cn.VALUE
+        for param, new_value in dict_with_values.items():
+            required_dict[param][key] = new_value
+        ut.write_config_file(self._config_file, self._camera_params, self._test_settings)
 
     @pyqtSlot()
     def set_test_as_failed(self):
@@ -272,22 +280,17 @@ class MainWindow(QMainWindow):
         self._current_test_failed_by_user = True
 
     @pyqtSlot()
-    def show_default_values(self):
+    def show_dialog_window_to_set_values(self):
         """
-        Slot shows dialog window with default values for camera settings.
-        """
-
-        dialog_wnd = DefaultValueWindow(self, self._camera_params)
-        dialog_wnd.default_values_received.connect(self.set_default_values)
-        dialog_wnd.exec()
-
-    @pyqtSlot()
-    def show_test_settings(self):
-        """
-        Slot shows dialog window with settings for tests.
+        Slot shows dialog windows to set default values for camera parameters
+        or test settings.
         """
 
-        dialog_wnd = TestSettingsWindow(self, {})
+        if self.sender() == self.action_default_values:
+            dialog_wnd = DefaultValueWindow(self, self._camera_params)
+        else:
+            dialog_wnd = TestSettingsWindow(self, self._test_settings)
+        dialog_wnd.values_received.connect(self.set_default_values_and_test_settings)
         dialog_wnd.exec()
 
     @pyqtSlot(int, int, dict)

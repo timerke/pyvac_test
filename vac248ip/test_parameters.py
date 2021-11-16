@@ -1,20 +1,16 @@
-#!/usr/bin/env python3
-
-from typing import List
 import sys
 import time
-
-from vac248ip import Vac248IpCamera, Vac248IpVideoFormat, Vac248IpGamma, Vac248IpShutter
+from typing import List
+from vac248ip import Vac248IpCamera
+from vac248ip_base import Vac248IpGamma, Vac248IpShutter, Vac248IpVideoFormat
 
 
 __all__ = []
 
 
 class Cameras:
-    def __init__(
-            self, addresses: List[str],
-            video_format: Vac248IpVideoFormat = Vac248IpVideoFormat.FORMAT_960x600
-    ) -> None:
+    def __init__(self, addresses: List[str],
+                 video_format: Vac248IpVideoFormat = Vac248IpVideoFormat.FORMAT_960x600) -> None:
         self.__addresses = addresses
         self.__video_format = video_format
         self.__cameras = None
@@ -29,9 +25,8 @@ class Cameras:
         return len(self.__cameras)
 
     def __enter__(self) -> "Cameras":
-        self.__cameras = [
-            Vac248IpCamera(address=address, video_format=self.__video_format) for address in self.__addresses
-        ]
+        self.__cameras = [Vac248IpCamera(address=address, video_format=self.__video_format)
+                          for address in self.__addresses]
         for camera in self.__cameras:
             camera.__enter__()
         return self
@@ -61,16 +56,12 @@ def dump_image(camera: Vac248IpCamera, camera_number: int, attempt_number: int) 
             camera.exposure,
             camera.sharpness,
             camera.gain_analog,
-            camera.gain_digital
-        ),
-        end=""
-    )
-
+            camera.gain_digital),
+        end="")
     print("Getting frame #{} from camera #{}...".format(attempt_number, camera_number), end="")
     start_time = time.monotonic()
     frame, frame_number = camera.frame
     print(" => Got frame #{}  (Frame get time: {}).".format(frame_number, time.monotonic() - start_time))
-
     with open("bitmap_{}_{}_{}.bmp".format(camera_number, attempt_number, frame_number), "wb") as file:
         file.write(camera.get_encoded_bitmap(update=False)[0])
 

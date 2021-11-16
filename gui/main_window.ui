@@ -6,15 +6,18 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>620</width>
-    <height>454</height>
+    <width>673</width>
+    <height>440</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="central_widget">
-   <layout class="QVBoxLayout" name="verticalLayout_3">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <property name="spacing">
+     <number>6</number>
+    </property>
     <property name="leftMargin">
      <number>9</number>
     </property>
@@ -78,146 +81,92 @@
         </property>
        </spacer>
       </item>
+      <item>
+       <widget class="QPushButton" name="button_start_or_stop_tests">
+        <property name="minimumSize">
+         <size>
+          <width>100</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>100</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Старт</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
      </layout>
     </item>
     <item>
      <layout class="QHBoxLayout" name="horizontal_layout_2">
       <item>
        <widget class="QGroupBox" name="group_box_tests">
+        <property name="minimumSize">
+         <size>
+          <width>300</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>200</width>
+          <height>16777215</height>
+         </size>
+        </property>
         <property name="title">
-         <string>Информация</string>
+         <string>Тесты</string>
         </property>
-        <property name="checkable">
-         <bool>true</bool>
-        </property>
-        <property name="checked">
-         <bool>false</bool>
-        </property>
-        <layout class="QVBoxLayout" name="verticalLayout">
+        <layout class="QVBoxLayout" name="verticalLayout_2">
          <item>
-          <widget class="QTextEdit" name="text_edit_info">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
+          <widget class="QScrollArea" name="scroll_area">
            <property name="maximumSize">
             <size>
-             <width>16777215</width>
-             <height>50</height>
+             <width>300</width>
+             <height>16777215</height>
             </size>
            </property>
-           <property name="readOnly">
+           <property name="widgetResizable">
             <bool>true</bool>
            </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QProgressBar" name="progress_bar">
-           <property name="value">
-            <number>0</number>
-           </property>
+           <widget class="QWidget" name="scroll_area_widget_contents">
+            <property name="geometry">
+             <rect>
+              <x>0</x>
+              <y>0</y>
+              <width>278</width>
+              <height>306</height>
+             </rect>
+            </property>
+           </widget>
           </widget>
          </item>
         </layout>
        </widget>
       </item>
       <item>
-       <layout class="QVBoxLayout" name="vertical_layout_2" stretch="0,0,0,0">
-        <property name="sizeConstraint">
-         <enum>QLayout::SetMinimumSize</enum>
+       <widget class="QWidget" name="widget_for_image" native="true">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
         </property>
-        <item>
-         <widget class="QPushButton" name="button_start_or_stop_tests">
-          <property name="minimumSize">
-           <size>
-            <width>100</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>100</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>Старт</string>
-          </property>
-          <property name="checkable">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="button_restart_tests">
-          <property name="minimumSize">
-           <size>
-            <width>100</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>100</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>Начать заново</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="button_call_failure">
-          <property name="minimumSize">
-           <size>
-            <width>100</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>100</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>Тест не пройден</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="button_skip_test">
-          <property name="minimumSize">
-           <size>
-            <width>100</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>100</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>Пропустить</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
+       </widget>
       </item>
      </layout>
     </item>
     <item>
-     <widget class="QWidget" name="widget_for_image" native="true">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
+     <widget class="QProgressBar" name="progress_bar">
+      <property name="value">
+       <number>0</number>
       </property>
      </widget>
     </item>
@@ -228,7 +177,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>620</width>
+     <width>673</width>
      <height>21</height>
     </rect>
    </property>
@@ -236,7 +185,6 @@
     <property name="title">
      <string>Настройки</string>
     </property>
-    <addaction name="action_test_settings"/>
     <addaction name="action_default_values"/>
    </widget>
    <addaction name="menu"/>

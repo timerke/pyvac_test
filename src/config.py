@@ -59,53 +59,29 @@ class CameraParameters(Enum):
             return CAMERA_PARAMETERS[param][MAX]
         return value
 
-
-class TestSettings(Enum):
-    """
-    Class with settings for tests.
-    """
-
-    DELAY = auto()
-    CONTRAST = auto()
-    EXPOSURE = auto()
-    GAIN_ANALOG = auto()
-    GAIN_DIGITAL = auto()
-    MAX_GAIN_AUTO = auto()
-
     @classmethod
-    def get_all_parameters(cls) -> tuple:
+    def is_auto_required(cls, parameter: "CameraParameters") -> bool:
         """
-        Method returns names of all parameters (attributes of given class).
-        :return: names of all parameters.
-        """
-
-        return cls.DELAY, cls.EXPOSURE, cls.GAIN_ANALOG, cls.GAIN_DIGITAL, cls.MAX_GAIN_AUTO
-
-    @classmethod
-    def get_value(cls, setting: "TestSettings", value: int) -> Optional[int]:
-        """
-        Method returns correct value for given setting.
-        :param setting: setting;
-        :param value: integer value.
-        :return: correct value of setting.
+        Method determines whether auto mode is required for the parameter test.
+        :param parameter: camera parameter.
+        :return: True if auto mode is required.
         """
 
-        if setting not in cls.get_all_parameters():
-            return None
-        try:
-            value = int(value)
-        except ValueError:
-            return TEST_SETTINGS[setting][VALUE]
-        if value < TEST_SETTINGS[setting][MIN]:
-            return TEST_SETTINGS[setting][MIN]
-        if value > TEST_SETTINGS[setting][MAX]:
-            return TEST_SETTINGS[setting][MAX]
-        return value
+        if parameter in (cls.CONTRAST, cls.GAMMA, cls.MAX_GAIN_AUTO):
+            return True
+        return False
 
 
 DEFAULT = "default"
+GET = "get"
 MAX = "max"
 MIN = "min"
+PARAMETER = "parameter"
+SET = "set"
+TEST_ERROR = "test_error"
+TEST_FRAME = "test_frame"
+TEST_FRAME_GOOD = "test_frame_good"
+TEST_RESULT = "test_result"
 VALUE = "value"
 VALUES = "values"
 
@@ -131,37 +107,44 @@ VIDEO_FORMAT = Vac248IpVideoFormat.FORMAT_960x600
 CAMERA_PARAMETERS = {
     CameraParameters.CONTRAST: {DEFAULT: CONTRAST_DEFAULT,
                                 MAX: CONTRAST_MAX,
-                                MIN: CONTRAST_MIN},
+                                MIN: CONTRAST_MIN,
+                                GET: "get_contrast_auto",
+                                SET: "set_contrast_auto"},
     CameraParameters.EXPOSURE: {DEFAULT: EXPOSURE_DEFAULT,
                                 MAX: EXPOSURE_MAX,
-                                MIN: EXPOSURE_MIN},
+                                MIN: EXPOSURE_MIN,
+                                GET: "get_exposure",
+                                SET: "set_exposure"},
     CameraParameters.GAIN_ANALOG: {DEFAULT: GAIN_ANALOG_DEFAULT,
                                    MAX: GAIN_ANALOG_MAX,
-                                   MIN: GAIN_ANALOG_MIN},
+                                   MIN: GAIN_ANALOG_MIN,
+                                   GET: "get_gain_analog",
+                                   SET: "set_gain_analog"},
     CameraParameters.GAIN_DIGITAL: {DEFAULT: GAIN_DIGITAL_DEFAULT,
                                     MAX: GAIN_DIGITAL_MAX,
-                                    MIN: GAIN_DIGITAL_MIN},
+                                    MIN: GAIN_DIGITAL_MIN,
+                                    GET: "get_gain_digital",
+                                    SET: "set_gain_digital"},
     CameraParameters.GAMMA: {DEFAULT: GAMMA_DEFAULT,
                              VALUES: (Vac248IpGamma.GAMMA_045, Vac248IpGamma.GAMMA_07,
-                                      Vac248IpGamma.GAMMA_1)},
+                                      Vac248IpGamma.GAMMA_1),
+                             GET: "get_gamma",
+                             SET: "set_gamma"},
     CameraParameters.MAX_GAIN_AUTO: {DEFAULT: MAX_GAIN_AUTO_DEFAULT,
                                      MAX: MAX_GAIN_AUTO_MAX,
-                                     MIN: MAX_GAIN_AUTO_MIN},
+                                     MIN: MAX_GAIN_AUTO_MIN,
+                                     GET: "get_max_gain_auto",
+                                     SET: "set_max_gain_auto"},
     CameraParameters.SHUTTER: {DEFAULT: SHUTTER_DEFAULT,
                                VALUES: (Vac248IpShutter.SHUTTER_GLOBAL,
-                                        Vac248IpShutter.SHUTTER_ROLLING)},
+                                        Vac248IpShutter.SHUTTER_ROLLING),
+                               GET: "get_shutter",
+                               SET: "set_shutter"},
     CameraParameters.VIDEO_FORMAT: {DEFAULT: VIDEO_FORMAT,
                                     VALUES: (Vac248IpVideoFormat.FORMAT_960x600,
-                                             Vac248IpVideoFormat.FORMAT_1920x1200)}
-}
-
-TEST_SETTINGS = {
-    TestSettings.DELAY: {VALUE: 2, MIN: 0, MAX: 10},
-    TestSettings.CONTRAST: {VALUE: 2, MIN: 1, MAX: 10},
-    TestSettings.EXPOSURE: {VALUE: 2, MIN: 1, MAX: 10},
-    TestSettings.GAIN_ANALOG: {VALUE: 2, MIN: 1, MAX: 4},
-    TestSettings.GAIN_DIGITAL: {VALUE: 2, MIN: 1, MAX: 10},
-    TestSettings.MAX_GAIN_AUTO: {VALUE: 2, MIN: 1, MAX: 10}
+                                             Vac248IpVideoFormat.FORMAT_1920x1200),
+                                    GET: "get_video_format",
+                                    SET: "set_video_format"}
 }
 
 CONFIG_FILE = "config.ini"

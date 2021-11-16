@@ -9,6 +9,7 @@ import traceback
 from PyQt5.QtCore import pyqtSignal, QObject
 from PyQt5.QtWidgets import QApplication, QMessageBox
 from src.main_window import MainWindow
+from src.utils import get_dir_name
 
 
 def create_logger() -> logging.Logger:
@@ -17,12 +18,11 @@ def create_logger() -> logging.Logger:
     :return: logger.
     """
 
-    formatter = logging.Formatter("%(asctime)s - %(message)s")
+    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
     stream_handler = logging.StreamHandler()
     stream_handler.setFormatter(formatter)
     stream_handler.setLevel(logging.INFO)
-    dir_name = os.path.dirname(os.path.abspath(__file__))
-    file_name = os.path.join(dir_name, "logs.log")
+    file_name = os.path.join(get_dir_name(), "logs.log")
     file_handler = logging.FileHandler(file_name)
     file_handler.setFormatter(formatter)
     file_handler.setLevel(logging.INFO)

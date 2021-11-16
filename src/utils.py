@@ -4,33 +4,42 @@ File with useful functions.
 
 import configparser
 import os
-from typing import Tuple
+import sys
 from . import config as cn
 
 
-def get_info_about_parameters(config_file: str) -> Tuple[dict, dict]:
+def get_dir_name() -> str:
     """
-    Function returns dictionaries with main information about camera parameters
-    and test settings.
+    Function returns path to directory with executable file or code files.
+    :return: path to directory.
+    """
+
+    if getattr(sys, "frozen", False):
+        path = os.path.dirname(os.path.abspath(sys.executable))
+    else:
+        path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return path
+
+
+def get_info_about_parameters(config_file: str) -> dict:
+    """
+    Function returns dictionaries with main information about camera parameters.
     :param config_file: name of config file.
     :return: dictionary with main information about parameters of camera and
     dictionary with test settings.
     """
 
     camera_info = cn.CAMERA_PARAMETERS
-    test_settings = cn.TEST_SETTINGS
     if os.path.exists(config_file):
-        read_config_file(config_file, camera_info, test_settings)
-    return camera_info, test_settings
+        read_config_file(config_file, camera_info)
+    return camera_info
 
 
-def read_config_file(file_name: str, camera_info: dict, test_settings: dict):
+def read_config_file(file_name: str, camera_info: dict):
     """
-    Function reads default values for parameters of camera and test settings
-    from config file.
+    Function reads default values for parameters of camera from config file.
     :param file_name: name of config file;
-    :param camera_info: dictionary with main information about camera parameters;
-    :param test_settings: dictionary with test settings.
+    :param camera_info: dictionary with main information about camera parameters.
     """
 
     config_parser = configparser.ConfigParser()
@@ -48,24 +57,13 @@ def read_config_file(file_name: str, camera_info: dict, test_settings: dict):
             camera_info[param][cn.DEFAULT] = cn.CameraParameters.get_value(param, value)
         except (KeyError, ValueError):
             pass
-    if not config_parser.has_section("TESTS"):
-        config_parser.add_section("TESTS")
-    for setting in cn.TestSettings.get_all_parameters():
-        try:
-            value = config_parser.getint("TESTS", setting.name,
-                                         fallback=test_settings[setting][cn.VALUE])
-            test_settings[setting][cn.VALUE] = cn.TestSettings.get_value(setting, value)
-        except (KeyError, ValueError):
-            pass
 
 
-def write_config_file(file_name: str, camera_info: dict, test_settings: dict):
+def write_config_file(file_name: str, camera_info: dict):
     """
-    Function writes default values for camera parameters and test settings to
-    config file.
+    Function writes default values for camera parameters to config file.
     :param file_name: name of config file;
-    :param camera_info: dictionary with main information about camera parameters;
-    :param test_settings: dictionary with test settings.
+    :param camera_info: dictionary with main information about camera parameters.
     """
 
     parser = configparser.ConfigParser()
@@ -76,8 +74,5 @@ def write_config_file(file_name: str, camera_info: dict, test_settings: dict):
         else:
             default_value = param_info[cn.DEFAULT]
         parser["DEFAULT_VALUES"][param.name] = str(default_value)
-    parser["TESTS"] = {}
-    for setting, setting_info in test_settings.items():
-        parser["TESTS"][setting.name] = str(setting_info[cn.VALUE])
     with open(file_name, "w") as file:
         parser.write(file)

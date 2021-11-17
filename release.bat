@@ -13,10 +13,12 @@ venv\Scripts\pyinstaller main.py --clean --onefile ^
 --hidden-import=PyQt5.sip ^
 --icon gui\icon.ico
 
-copy README.md dist
+copy readme_for_release.md dist
+copy example.gif dist
 
 rename dist release
 rename release\main.exe pyvac_test.exe
+rename release\readme_for_release.md readme.md
 
 if exist build rd /s/q build
 if exist dist rd /s/q dist

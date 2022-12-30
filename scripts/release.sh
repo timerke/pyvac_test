@@ -14,7 +14,8 @@ python3 -m venv venv
 --icon=gui/icon.ico
 
 cp readme_for_release.md ./dist
-cp example.gif ./dist
+mkdir dist/gui
+cp gui/example.gif ./dist/gui
 mv dist release
 mv ./release/main ./release/revealer
 mv ./release/readme_for_release.md ./release/readme.md

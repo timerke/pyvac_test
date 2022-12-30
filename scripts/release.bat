@@ -15,7 +15,8 @@ venv\Scripts\pyinstaller main.py --clean --onefile ^
 --icon gui\icon.ico
 
 copy readme_for_release.md dist
-copy example.gif dist
+mkdir dist\gui
+copy gui\example.gif dist\gui
 
 rename dist release
 rename release\main.exe pyvac_test.exe

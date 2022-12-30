@@ -52,8 +52,7 @@ class MainWindow(QMainWindow):
             self._logger.error("Test #%s failed", self._test_index)
         else:
             self._logger.info("Test #%s passed", self._test_index)
-        if (result[cn.TEST_FRAME] is not None and
-                self.tests_widget.currentIndex() == self._test_index):
+        if result[cn.TEST_FRAME] is not None and self.tests_widget.currentIndex() == self._test_index:
             self.image_widget.create_image(result[cn.TEST_FRAME])
         self.tests_widget.set_test_result(self._test_index, result)
 
@@ -69,8 +68,8 @@ class MainWindow(QMainWindow):
         if "virtual" in self._ip_address:
             self._camera = Vac248IpCameraVirtual(self._ip_address, defer_open=True)
         else:
-            self._camera = Vac248IpCamera(self._ip_address, defer_open=True,
-                                          network_operation_timeout=1, default_attempts=1)
+            self._camera = Vac248IpCamera(self._ip_address, defer_open=True, network_operation_timeout=1,
+                                          default_attempts=1)
         try:
             self._camera.open_device(1)
         except Exception:
@@ -136,7 +135,7 @@ class MainWindow(QMainWindow):
         icon = QIcon(os.path.join(dir_name, "gui", "icon.png"))
         self.setWindowIcon(icon)
         self.action_default_values.triggered.connect(self.show_dialog_window)
-        reg_exp = QRegExp("^(virtual|bad_virtual|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(:\d+)?)$")
+        reg_exp = QRegExp(r"^(virtual|bad_virtual|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(:\d+)?)$")
         validator = QRegExpValidator(reg_exp, self)
         self.line_edit_ip_address.setValidator(validator)
         self.line_edit_ip_address.returnPressed.connect(self.connect_or_disconnect_camera)
@@ -292,7 +291,7 @@ class MainWindow(QMainWindow):
         dialog_wnd = DefaultValueWindow(self, self._camera_params)
         dialog_wnd.values_received.connect(self.set_default_values)
         dialog_wnd.exec()
-    
+
     @pyqtSlot(int)
     def show_frame(self, index: int):
         """

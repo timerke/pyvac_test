@@ -25,7 +25,7 @@ class TestsWidget(QToolBox):
         self._params_info: dict = params_info
         self._tests: list = []
         self._widgets_for_tests: list = []
-    
+
     def _clear(self):
         """
         Method clears widget for tests.
@@ -34,7 +34,7 @@ class TestsWidget(QToolBox):
         for index in range(len(self._tests) - 1, -1, -1):
             self.removeItem(index)
         self._tests.clear()
-    
+
     def _create_tests(self) -> list:
         """
         Method creates tests.
@@ -63,10 +63,9 @@ class TestsWidget(QToolBox):
                   cn.SET: param_info[cn.SET],
                   cn.VALUE: value} for value in param_info[cn.VALUES]]
         return tests
-    
+
     @staticmethod
-    def _create_tests_for_param_with_max_and_min(param: cn.CameraParameters, param_info: dict
-                                                 )-> list:
+    def _create_tests_for_param_with_max_and_min(param: cn.CameraParameters, param_info: dict) -> list:
         """
         Method creates tests for camera parameter with min and max ranges.
         :param param: parameter for which tests are created;
@@ -81,7 +80,7 @@ class TestsWidget(QToolBox):
                   cn.SET: param_info[cn.SET],
                   cn.VALUE: value} for value in values]
         return tests
-    
+
     def _init_ui(self):
         """
         Method initializes widgets.
@@ -197,7 +196,7 @@ class TestsWidget(QToolBox):
         """
         Method sets widgets to initial state.
         """
-        
+
         self._clear()
         self._tests = self._create_tests()
         self._init_ui()

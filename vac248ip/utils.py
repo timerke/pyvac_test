@@ -21,8 +21,7 @@ def _check_image_file(file_name: str) -> bool:
     """
 
     extensions = ".bmp", ".jpg", ".png"
-    if (os.path.exists(file_name) and os.path.isfile(file_name) and
-            os.path.splitext(file_name)[1].lower() in extensions):
+    if os.path.exists(file_name) and os.path.isfile(file_name) and os.path.splitext(file_name)[1].lower() in extensions:
         return True
     return False
 
@@ -189,12 +188,10 @@ def get_host_and_port(address: Union[str, Tuple[str, int]]) -> Tuple[str, int]:
         parsed_address = urlparse("http://{}".format(address))
         port = parsed_address.port if parsed_address.port is not None else vac248ip_default_port
         return parsed_address.hostname, port
-    if (isinstance(address, tuple) and len(address) == 2 and isinstance(address[0], str) and
-            isinstance(address[1], int)):
+    if isinstance(address, tuple) and len(address) == 2 and isinstance(address[0], str) and isinstance(address[1], int):
         return address
     raise ValueError("Incorrect address (expected str in format \'host[:port]\' ot tuple "
-                     "(host: str, port: int), given value of type: {})".
-                     format(type(address).__name__))
+                     "(host: str, port: int), given value of type: {})".format(type(address).__name__))
 
 
 def open_image(file_name: str, width: int, height: int) -> Optional[np.ndarray]:

@@ -552,9 +552,8 @@ class Vac248IpCamera(Vac248IpCameraBase):
             offset = packet_index * default_frame_data_size
             actual_packet_size = min(default_frame_data_size, frame_size - offset)
 
-            received_packets = frame_buffers[
-                               np.nonzero(frame_packets_received.transpose()[packet_index]),
-                               offset:offset + actual_packet_size]
+            received_packets = frame_buffers[np.nonzero(frame_packets_received.transpose()[packet_index]),
+                                             offset:offset + actual_packet_size]
             if received_packets.shape[1] > 0:
                 frame_buffer[offset:offset + actual_packet_size] = received_packets.mean(
                     axis=1, dtype=np.uint16)
@@ -718,8 +717,8 @@ class _Vac248IpCameraConfig:
 
     @property
     def management_data(self) -> int:
-        return (self.management_data_0 + (self.management_data_1 << 8) +
-                (self.management_data_2 << 16) + (self.management_data_3 << 24))
+        return self.management_data_0 + (self.management_data_1 << 8) + (self.management_data_2 << 16) + \
+            (self.management_data_3 << 24)
 
     @property
     def gamma_correction(self) -> Vac248IpGamma:

@@ -1,3 +1,4 @@
+cd ..
 if exist build rd /s/q build
 if exist dist rd /s/q dist
 if exist release rd /s/q release

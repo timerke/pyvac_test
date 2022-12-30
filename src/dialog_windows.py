@@ -15,7 +15,7 @@ class DefaultValueWindow(QDialog):
 
     values_received = pyqtSignal(dict)
 
-    def __init__(self, parent: "MainWindow", params_info: dict):
+    def __init__(self, parent, params_info: dict):
         """
         :param parent: main window of application;
         :param params_info: dictionary with main information about camera

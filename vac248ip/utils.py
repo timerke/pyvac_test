@@ -2,9 +2,10 @@
 File with useful functions.
 """
 
+import functools
 import io
 import os
-from typing import List, Optional, Tuple, Union
+from typing import Callable, List, Optional, Tuple, Union
 from urllib.parse import urlparse
 import numpy as np
 from PIL import Image
@@ -26,7 +27,7 @@ def _check_image_file(file_name: str) -> bool:
     return False
 
 
-def _create_image(width: int, height: int, amplitude: int) -> np.array:
+def _create_image(width: int, height: int, amplitude: int) -> np.ndarray:
     """
     Function creates image.
     :param width: width;
@@ -44,21 +45,21 @@ def _create_image(width: int, height: int, amplitude: int) -> np.array:
     return pixels
 
 
-def check_open(func):
+def check_open(func: Callable) -> Callable:
     """
     Decorator to check whether camera is open.
     :param func: decorated method of camera.
     """
 
+    @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
-        if not self.is_open:
+        if not self.is_open and func.__name__ != "close_device":
             raise ValueError("Error! Camera is not open")
         return func(self, *args, **kwargs)
     return wrapper
 
 
-def clip(value: Union[int, float], min_value: Union[int, float], max_value: Union[int, float]) ->\
-        Union[int, float]:
+def clip(value: Union[int, float], min_value: Union[int, float], max_value: Union[int, float]) -> Union[int, float]:
     """
     Function returns available value in given range.
     :param value: given value;
@@ -121,8 +122,7 @@ def create_image_files_list(image_files: List[str], image_dir: str) -> List[str]
             if _check_image_file(image_file):
                 full_image_files.append(image_file)
             else:
-                print("Warning! Image file '{}' was not found or is not image and will not be used".
-                      format(image_file))
+                print("Warning! Image file '{}' was not found or is not image and will not be used".format(image_file))
     if image_dir:
         if not os.path.exists(image_dir):
             print("Warning! Directory '{}' was not found and will not be used".format(image_dir))
@@ -134,7 +134,7 @@ def create_image_files_list(image_files: List[str], image_dir: str) -> List[str]
     return full_image_files
 
 
-def create_images(dir_name: str):
+def create_images(dir_name: str) -> None:
     """
     Functions creates images and saves them in directory.
     :param dir_name: name of directory where images will be saved.
@@ -145,7 +145,7 @@ def create_images(dir_name: str):
     for width, height in sizes:
         for amplitude in amplitudes:
             amplitude = int(amplitude)
-            file_name = os.path.join(dir_name, f"{width}x{height} {amplitude}.bmp")
+            file_name = os.path.join(dir_name, "{}x{} {}.bmp".format(width, height, amplitude))
             pixels = _create_image(width, height, amplitude)
             image = Image.fromarray(pixels)
             image.save(file_name)

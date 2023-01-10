@@ -15,6 +15,7 @@ _vac248ip_native_library_allowed = None
 
 # Camera settings
 class Vac248IpVideoFormat(enum.IntEnum):
+
     FORMAT_960x600 = 0
     FORMAT_1920x1200 = 1
     FORMAT_960x600_10bit = 2
@@ -68,13 +69,10 @@ class Vac248IpCameraBase:
     open_delay = 0.2
 
     def __init__(self, address: Union[str, Tuple[str, int]], *args,
-                 video_format: Vac248IpVideoFormat = Vac248IpVideoFormat.FORMAT_1920x1200,
-                 num_frames: int = 1, open_attempts: Optional[int] = 10,
-                 default_attempts: Optional[int] = None, defer_open: bool = False,
-                 frame_number_module: int = 1000000,
-                 network_operation_timeout: Union[None, int, float] = 1,
-                 udp_redundant_coeff: Union[int, float] = 1.5,
-                 allow_native_library: Optional[bool] = None):
+                 video_format: Vac248IpVideoFormat = Vac248IpVideoFormat.FORMAT_1920x1200, num_frames: int = 1,
+                 open_attempts: Optional[int] = 10, default_attempts: Optional[int] = None, defer_open: bool = False,
+                 frame_number_module: int = 1000000, network_operation_timeout: Union[None, int, float] = 1,
+                 udp_redundant_coeff: Union[int, float] = 1.5, allow_native_library: Optional[bool] = None) -> None:
         """
         :param address: string with camera address (maybe, trailing with ":<port>",
         default port is vac248ip_default_port) or tuple (ip address: str, port: int);
@@ -118,8 +116,7 @@ class Vac248IpCameraBase:
                             frame_number += 1
                         else:
                             raise ValueError("Incorrect frame_number_module value ({}, "
-                                             "but expected int in range: [-1, +inf))".
-                                             format(frame_number_module))
+                                             "but expected int in range: [-1, +inf))".format(frame_number_module))
         self._update_frame_number_it = iter(update_frame_number_generator())
         self._frame_number = 0
         self._frame_number_module = frame_number_module
@@ -142,23 +139,18 @@ class Vac248IpCameraBase:
         self._gain_analog = 1  # gain_analog: 1..4 (means gain 1, 2, 4, 8)
         self._gain_digital = 1  # gain_digital: 1..48 (means gain 0.25..12.0)
         self._camera_mac_address = bytes(6)
+        self._camera_id = 0  # camera id: 0, 6 or 10 (means unknown, vac248ip or vac251ip)
 
         self._num_frames = num_frames
         self._socket = None
 
         # Buffers for receiving frames
-        frame_width, frame_height, _, bytes_per_pixel = \
-            vac248ip_frame_parameters_by_format[self._video_format]
+        frame_width, frame_height, _, bytes_per_pixel = vac248ip_frame_parameters_by_format[self._video_format]
         self._frame_buffer = np.zeros(frame_width * frame_height * bytes_per_pixel, dtype=np.uint8)
 
-        if allow_native_library is None:
-            if _vac248ip_native_library_allowed is None:
-                allow_native_library = True
-            else:
-                allow_native_library = _vac248ip_native_library_allowed
-        else:
-            allow_native_library = bool(allow_native_library)
-        self._native_library_used = allow_native_library and self._try_load_native_library()
+        # In the task #72286, it was decided to abandon the use of the native library,
+        # since it leaked memory, and the performance gain was not noticeable.
+        self._native_library_used = False
 
     def __del__(self):
         self.close_device()
@@ -171,11 +163,11 @@ class Vac248IpCameraBase:
         self.close_device()
 
     @abstractmethod
-    def _apply_config(self, config_buffer: Union[ByteString, np.ndarray, memoryview]):
+    def _apply_config(self, config_buffer: Union[ByteString, np.ndarray, memoryview]) -> None:
         raise NotImplementedError
 
     @abstractmethod
-    def _update_config(self, force: bool = False):
+    def _update_config(self, force: bool = False) -> None:
         raise NotImplementedError
 
     def _attempts_sequence(self, attempts: Optional[int]) -> Iterable[int]:
@@ -191,7 +183,7 @@ class Vac248IpCameraBase:
         return self._frame_buffer.reshape(frame_height, frame_width), self._frame_number
 
     @abstractmethod
-    def _send_command(self, command: int, data: int = 0):
+    def _send_command(self, command: int, data: int = 0) -> None:
         """
         Sends command.
         :param command: command code;
@@ -200,24 +192,25 @@ class Vac248IpCameraBase:
 
         raise NotImplementedError
 
-    def _send_command_get_config(self):
+    def _send_command_get_config(self) -> None:
         self._send_command(0xf2)
 
-    def _send_command_get_single_frame(self):
+    def _send_command_get_single_frame(self) -> None:
         self._send_command(0xe8)
 
-    def _send_command_start(self):
+    def _send_command_start(self) -> None:
         self._send_command(0x5a, self._video_format.value | 0x80)
 
-    def _send_command_stop(self):
-        self._send_command(0x5a)
+    def _send_command_stop(self) -> None:
+        # This is recommended in v251 protocol
+        self._send_command(0x5a, self._video_format.value)
 
     @abstractmethod
     def _try_load_native_library(self) -> bool:
         raise NotImplementedError
 
     @abstractmethod
-    def _update_frame(self, num_frames: int):
+    def _update_frame(self, num_frames: int) -> None:
         """
         Updates frame using simple algorithm.
         :param num_frames: frames from camera used to glue result frame.
@@ -226,7 +219,7 @@ class Vac248IpCameraBase:
         raise NotImplementedError
 
     @abstractmethod
-    def _update_mean_frame(self, frames: int, num_frames: int):
+    def _update_mean_frame(self, frames: int, num_frames: int) -> None:
         """
         Updates mean frame using glue-mean algorithm.
         :param frames: glued sub-frames used to calculate mean frame;
@@ -236,7 +229,7 @@ class Vac248IpCameraBase:
         raise NotImplementedError
 
     @abstractmethod
-    def _update_smart_mean_frame(self, frames: int):
+    def _update_smart_mean_frame(self, frames: int) -> None:
         """
         Updates mean frame using smart algorithm.
         :param frames: frames from camera used to calculate mean frame.
@@ -269,7 +262,7 @@ class Vac248IpCameraBase:
         return self._default_attempts
 
     @default_attempts.setter
-    def default_attempts(self, value: Optional[int]):
+    def default_attempts(self, value: Optional[int]) -> None:
         if value is None:
             self._default_attempts = None
         else:
@@ -283,11 +276,11 @@ class Vac248IpCameraBase:
         return self._native_library_used
 
     @abstractmethod
-    def open_device(self, attempts: Optional[int] = 10):
+    def open_device(self, attempts: Optional[int] = 10) -> None:
         raise NotImplementedError
 
     @abstractmethod
-    def close_device(self):
+    def close_device(self) -> None:
         raise NotImplementedError
 
     @property
@@ -348,8 +341,7 @@ class Vac248IpCameraBase:
     smart_mean_frame = property(get_smart_mean_frame)
 
     def get_encoded_image_size(self) -> int:
-        frame_width, frame_height, _, bytes_per_pixel = \
-            vac248ip_frame_parameters_by_format[self._video_format]
+        frame_width, frame_height, _, bytes_per_pixel = vac248ip_frame_parameters_by_format[self._video_format]
         return frame_width * frame_height * bytes_per_pixel
 
     encoded_image_size = property(get_encoded_image_size)
@@ -375,9 +367,8 @@ class Vac248IpCameraBase:
 
     encoded_image = property(get_encoded_image)
 
-    def get_encoded_mean_image(self, update: bool = True, frames: int = 3,
-                               num_frames: Optional[int] = None, attempts: Optional[int] = -1) ->\
-            Tuple[bytes, int]:
+    def get_encoded_mean_image(self, update: bool = True, frames: int = 3, num_frames: Optional[int] = None,
+                               attempts: Optional[int] = -1) -> Tuple[bytes, int]:
         """
         Returns encoded image data and frame number.
         """
@@ -397,9 +388,8 @@ class Vac248IpCameraBase:
 
     encoded_mean_image = property(get_encoded_mean_image)
 
-    def get_encoded_bitmap(self, update: bool = True, num_frames: Optional[int] = None,
-                           attempts: Optional[int] = -1, image_format: str = "bmp") ->\
-            Tuple[bytes, int]:
+    def get_encoded_bitmap(self, update: bool = True, num_frames: Optional[int] = None, attempts: Optional[int] = -1,
+                           image_format: str = "bmp") -> Tuple[bytes, int]:
         """
         Returns encoded image data and frame number.
         :param update: update frame (default) or use old frame data;
@@ -423,9 +413,8 @@ class Vac248IpCameraBase:
 
     encoded_bitmap_size = property(get_encoded_bitmap_size)
 
-    def get_encoded_mean_bitmap(self, update: bool = True, frames: int = 3,
-                                num_frames: Optional[int] = None, attempts: Optional[int] = -1,
-                                image_format: str = "bmp") -> Tuple[bytes, int]:
+    def get_encoded_mean_bitmap(self, update: bool = True, frames: int = 3, num_frames: Optional[int] = None,
+                                attempts: Optional[int] = -1, image_format: str = "bmp") -> Tuple[bytes, int]:
         """
         Returns encoded image data and frame number.
         :param update: update frame (default) or use old frame data;
@@ -441,9 +430,8 @@ class Vac248IpCameraBase:
 
     encoded_mean_bitmap = property(get_encoded_mean_bitmap)
 
-    def get_encoded_smart_mean_bitmap(self, update: bool = True, frames: int = 3,
-                                      attempts: Optional[int] = -1, image_format: str = "bmp") ->\
-            Tuple[bytes, int]:
+    def get_encoded_smart_mean_bitmap(self, update: bool = True, frames: int = 3, attempts: Optional[int] = -1,
+                                      image_format: str = "bmp") -> Tuple[bytes, int]:
         """
         See doc for get_smart_mean_frame().
         :param update: update frame (default) or use old frame data;
@@ -458,7 +446,7 @@ class Vac248IpCameraBase:
 
     encoded_smart_mean_bitmap = property(get_encoded_smart_mean_bitmap)
 
-    def update_config(self, force: bool = False, attempts: Optional[int] = -1):
+    def update_config(self, force: bool = False, attempts: Optional[int] = -1) -> None:
         """
         Updates parameters of camera.
         :param force: if True then update is needed;
@@ -476,7 +464,7 @@ class Vac248IpCameraBase:
             if exception is not None:
                 raise exception
 
-    def update_frame(self, num_frames: Optional[int] = None, attempts: Optional[int] = -1):
+    def update_frame(self, num_frames: Optional[int] = None, attempts: Optional[int] = -1) -> None:
         """
         Updates frame as glued frame.
         """
@@ -494,8 +482,8 @@ class Vac248IpCameraBase:
         if exception is not None:
             raise exception
 
-    def update_mean_frame(self, frames: int = 3, num_frames: Optional[int] = None,
-                          attempts: Optional[int] = -1):
+    def update_mean_frame(self, frames: int = 3, num_frames: Optional[int] = None, attempts: Optional[int] = -1
+                          ) -> None:
         """
         Updates frame as mean frame.
         """
@@ -513,7 +501,7 @@ class Vac248IpCameraBase:
         if exception is not None:
             raise exception
 
-    def update_smart_mean_frame(self, frames: int = 3, attempts: Optional[int] = -1):
+    def update_smart_mean_frame(self, frames: int = 3, attempts: Optional[int] = -1) -> None:
         """
         Updates frame as mean frame using smart algorithm.
         """
@@ -539,7 +527,7 @@ class Vac248IpCameraBase:
         self.update_config(attempts=attempts)
         return self._auto_gain_expo
 
-    def set_auto_gain_expo(self, auto_gain_expo: bool):
+    def set_auto_gain_expo(self, auto_gain_expo: bool) -> None:
         """
         Set auto/manual exposure mode.
         :param auto_gain_expo: True means "enable automatic mode", False - "enable manual mode".
@@ -559,11 +547,11 @@ class Vac248IpCameraBase:
         """
 
         self.update_config(attempts=attempts)
-        if self._contrast_auto > 70:
+        if self._contrast_auto > 127:
             return self._contrast_auto - 255 - 1
         return self._contrast_auto
 
-    def set_contrast_auto(self, contrast_auto: int):
+    def set_contrast_auto(self, contrast_auto: int) -> None:
         """
         Sets contrast auto value: -70..70.
         :param contrast_auto: contrast auto value.
@@ -586,7 +574,7 @@ class Vac248IpCameraBase:
         self.update_config(attempts=attempts)
         return self._exposure
 
-    def set_exposure(self, exposure: int):
+    def set_exposure(self, exposure: int) -> None:
         """
         Sets exposure and turns on manual mode.
         :param exposure: exposure [1..190] to set.
@@ -655,7 +643,7 @@ class Vac248IpCameraBase:
         self.update_config(attempts=attempts)
         return self._gain_analog
 
-    def set_gain_analog(self, gain_analog: int):
+    def set_gain_analog(self, gain_analog: int) -> None:
         """
         Sets analog gain value: 1..4 (means gain 1, 2, 4, 8).
         :param gain_analog: analog gain value to set.
@@ -678,7 +666,7 @@ class Vac248IpCameraBase:
         self.update_config(attempts=attempts)
         return self._gain_digital
 
-    def set_gain_digital(self, gain_digital: int):
+    def set_gain_digital(self, gain_digital: int) -> None:
         """
         Sets digital gain value: 1..48 (means gain 0.25..12.0).
         :param gain_digital: digital gain value.
@@ -701,7 +689,7 @@ class Vac248IpCameraBase:
         self.update_config(attempts=attempts)
         return self._gamma
 
-    def set_gamma(self, gamma: Vac248IpGamma):
+    def set_gamma(self, gamma: Vac248IpGamma) -> None:
         """
         Sets gamma value.
         :param gamma: gamma value to set.
@@ -785,7 +773,7 @@ class Vac248IpCameraBase:
         self.update_config(attempts=attempts)
         return self._shutter
 
-    def set_shutter(self, shutter: Vac248IpShutter):
+    def set_shutter(self, shutter: Vac248IpShutter) -> None:
         """
         Sets shutter value.
         :param shutter: shutter value to set.
@@ -794,7 +782,11 @@ class Vac248IpCameraBase:
         command_for_shutter = {Vac248IpShutter.SHUTTER_GLOBAL: 0x36,
                                Vac248IpShutter.SHUTTER_ROLLING: 0x38}
         shutter = Vac248IpShutter(shutter)
+
+        # VAC251IP does not allow modifying SHUTTER value without stopping camera
+        self._send_command_stop()
         self._send_command(command_for_shutter[shutter])
+
         self._shutter = shutter
         self._need_update_config = True
 
@@ -808,7 +800,7 @@ class Vac248IpCameraBase:
 
         return self._video_format
 
-    def set_video_format(self, video_format: Vac248IpVideoFormat):
+    def set_video_format(self, video_format: Vac248IpVideoFormat) -> None:
         """
         Sets video format.
         :param video_format: video format to set.
@@ -817,8 +809,7 @@ class Vac248IpCameraBase:
         if video_format in Vac248IpVideoFormat.get_10_bit_formats():
             raise ValueError("10-bit video mode not supported")
         self._video_format = Vac248IpVideoFormat(video_format)
-        frame_width, frame_height, _, bytes_per_pixel = \
-            vac248ip_frame_parameters_by_format[self._video_format]
+        frame_width, frame_height, _, bytes_per_pixel = vac248ip_frame_parameters_by_format[self._video_format]
         self._frame_buffer = np.zeros(frame_width * frame_height * bytes_per_pixel, dtype=np.uint8)
 
     video_format = property(get_video_format)
@@ -831,7 +822,7 @@ class Vac248IpCameraBase:
 
         return self._view_mode_10bit
 
-    def set_view_mode_10bit(self, view_mode_10bit: Vac248Ip10BitViewMode):
+    def set_view_mode_10bit(self, view_mode_10bit: Vac248Ip10BitViewMode) -> None:
         """
         Sets 10-bit view mode.
         :param view_mode_10bit: 10-bit view mode.
@@ -840,3 +831,13 @@ class Vac248IpCameraBase:
         self._view_mode_10bit = Vac248Ip10BitViewMode(view_mode_10bit)
 
     view_mode_10bit = property(get_view_mode_10bit, set_view_mode_10bit)
+
+    def get_camera_id(self, attempts: Optional[int] = -1) -> int:
+        """
+        Returns camera id value: 6 (vac248) or 10 (vac251).
+        Required by testing software as some tests are version-specific.
+        :param attempts: number of attempts to update config.
+        :return: camera id value.
+        """
+        self.update_config(attempts=attempts)
+        return self._camera_id

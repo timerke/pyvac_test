@@ -15,26 +15,33 @@ from .vac248ip_base import (Vac248IpCameraBase, Vac248IpGamma, Vac248IpShutter, 
                             vac248ip_frame_parameters_by_format)
 
 
-__all__ = ["vac248ip_allow_native_library", "vac248ip_deny_native_library",
-           "vac248ip_main", "Vac248IpCamera"]
-
+__all__ = ["vac248ip_allow_native_library", "vac248ip_deny_native_library", "vac248ip_main", "Vac248IpCamera"]
 _VAC248IP_CAMERA_DATA_PACKET_SIZE = 1472
 _vac248ip_native_library_allowed = None
 
 
-def vac248ip_allow_native_library():
+def vac248ip_allow_native_library() -> None:
+    """
+    Function no longer works. In the task #72286, it was decided to abandon the use of the native library,
+    since it leaked memory, and the performance gain was not noticeable.
+    """
+
     global _vac248ip_native_library_allowed
     if _vac248ip_native_library_allowed is None:
         _vac248ip_native_library_allowed = True
 
 
-def vac248ip_deny_native_library():
+def vac248ip_deny_native_library() -> None:
+    """
+    Function no longer works. In the task #72286, it was decided to abandon the use of the native library,
+    since it leaked memory, and the performance gain was not noticeable.
+    """
+
     global _vac248ip_native_library_allowed
     if _vac248ip_native_library_allowed is None:
         _vac248ip_native_library_allowed = False
 
 
-# Camera
 class Vac248IpCamera(Vac248IpCameraBase):
     """
     Vac248IP camera handler.
@@ -50,13 +57,10 @@ class Vac248IpCamera(Vac248IpCameraBase):
     open_delay = 0.2
 
     def __init__(self, address: Union[str, Tuple[str, int]], *args,
-                 video_format: Vac248IpVideoFormat = Vac248IpVideoFormat.FORMAT_1920x1200,
-                 num_frames: int = 1, open_attempts: Optional[int] = 10,
-                 default_attempts: Optional[int] = None, defer_open: bool = False,
-                 frame_number_module: int = 1000000,
-                 network_operation_timeout: Union[None, int, float] = 1,
-                 udp_redundant_coeff: Union[int, float] = 1.5,
-                 allow_native_library: Optional[bool] = None):
+                 video_format: Vac248IpVideoFormat = Vac248IpVideoFormat.FORMAT_1920x1200, num_frames: int = 1,
+                 open_attempts: Optional[int] = 10, default_attempts: Optional[int] = None, defer_open: bool = False,
+                 frame_number_module: int = 1000000, network_operation_timeout: Union[None, int, float] = 1,
+                 udp_redundant_coeff: Union[int, float] = 1.5, allow_native_library: Optional[bool] = None) -> None:
         """
         Vac248IpCamera constructor.
         :param address: string with camera address (maybe, trailing with ":<port>",
@@ -78,20 +82,23 @@ class Vac248IpCamera(Vac248IpCameraBase):
         for speed up some operations for you.
         """
 
-        super().__init__(address, *args, video_format=video_format, num_frames=num_frames,
-                         open_attempts=open_attempts, default_attempts=default_attempts,
-                         defer_open=defer_open, frame_number_module=frame_number_module,
-                         network_operation_timeout=network_operation_timeout,
-                         udp_redundant_coeff=udp_redundant_coeff,
-                         allow_native_library=allow_native_library)
-        self._capture_packets_native_fn = None
+        super().__init__(address, *args, video_format=video_format, num_frames=num_frames, open_attempts=open_attempts,
+                         default_attempts=default_attempts, defer_open=defer_open,
+                         frame_number_module=frame_number_module, network_operation_timeout=network_operation_timeout,
+                         udp_redundant_coeff=udp_redundant_coeff, allow_native_library=allow_native_library)
+        # Setting this on every initialization results in TypeErrors.
+        # The function should be None only if the native library is
+        # explicitly NOT being used.
+        # self._capture_packets_native_fn = None
         self._capture_packets = self._capture_packets_universal
         if self._native_library_used:
             self._capture_packets = self._capture_packets_native
+        else:
+            self._capture_packets_native_fn = None
         if not defer_open:
             self.open_device(attempts=open_attempts)
 
-    def _apply_config(self, config_buffer: Union[ByteString, np.ndarray, memoryview]):
+    def _apply_config(self, config_buffer: Union[ByteString, np.ndarray, memoryview]) -> None:
         config = _Vac248IpCameraConfig(config_buffer)
         self._shutter = config.shutter
         self._gamma = config.gamma_correction
@@ -104,8 +111,11 @@ class Vac248IpCamera(Vac248IpCameraBase):
         self._gain_digital = config.gain_digital
         self._camera_mac_address = config.mac_address
         self._need_update_config = False
+        # For version-specific functionality, camera class should contain
+        # version information
+        self._camera_id = config.camera_id
 
-    def _update_config(self, force: bool = False):
+    def _update_config(self, force: bool = False) -> None:
         if self._need_update_config or force:
             self._send_command_stop()
             self._drop_received_packets()
@@ -116,7 +126,15 @@ class Vac248IpCamera(Vac248IpCameraBase):
             packet_buffer = np.empty(_Vac248IpCameraConfig.PACKET_LENGTH, dtype=np.uint8)
             packet_length = _Vac248IpCameraConfig.PACKET_LENGTH
             while True:
-                result_length, address = camera_socket.recvfrom_into(packet_buffer, packet_length)
+                # If data packets for the current camera are bigger than config
+                # packets, an error can occur when reading into the smaller
+                # buffer
+                try:
+                    result_length, address = camera_socket.recvfrom_into(packet_buffer, packet_length)
+                except OSError as e:
+                    self.logger.debug("While awaiting configuration packet, "
+                                      "error occurred: {}".format(e))
+                    continue
                 if result_length == packet_length and address[0] == camera_address:
                     break
             self._apply_config(packet_buffer)
@@ -234,8 +252,7 @@ class Vac248IpCamera(Vac248IpCameraBase):
         while packets_received < packet_buffers_count:
             # Buffer for current packet
             packet_offset = packets_received * (data_packet_size + 1)
-            packet_buffer = packet_buffers_mv[packet_offset + 1:
-                                              packet_offset + 1 + data_packet_size]
+            packet_buffer = packet_buffers_mv[packet_offset + 1: packet_offset + 1 + data_packet_size]
 
             # Receive data or settings packet dropping other
             try:
@@ -258,9 +275,11 @@ class Vac248IpCamera(Vac248IpCameraBase):
 
                 # Frame numbers starts with 0
                 frame_number = packet_buffer[0]
+
                 if frame_number == 0:
                     # Skip the first frame, which can be overexposed
                     continue
+
                 if frame_number > frames:
                     # All required frames received, stop packets collecting algorithm
                     break
@@ -299,7 +318,7 @@ class Vac248IpCamera(Vac248IpCameraBase):
         finally:
             self._set_socket_blocking_with_timeout(self._network_operation_timeout)
 
-    def _load_capture_packets_native_fn(self, native_library):
+    def _load_capture_packets_native_fn(self, native_library) -> None:
         self._capture_packets_native_fn = native_library.pyvac248ipnative_capture_packets
         self._capture_packets_native_fn.restype = ctypes.c_int
         self._capture_packets_native_fn.argtypes = (
@@ -320,7 +339,7 @@ class Vac248IpCamera(Vac248IpCameraBase):
             ctypes.c_uint8  # exposure
         )
 
-    def _open(self):
+    def _open(self) -> None:
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         try:
             self._socket.bind(("", self._camera_port))
@@ -339,18 +358,17 @@ class Vac248IpCamera(Vac248IpCameraBase):
             self._socket = None
             raise
 
-    def _send_command(self, command: int, data: int = 0):
+    def _send_command(self, command: int, data: int = 0) -> None:
         """
         Sends command.
         :param command: command code;
         :param data: data for command.
         """
 
-        self._socket.send(bytes((command & 0xff, data & 0xff, 0, 0, 0, 0, 0,
-                                 (command + data) & 0xff)))
+        self._socket.send(bytes((command & 0xff, data & 0xff, 0, 0, 0, 0, 0, (command + data) & 0xff)))
         time.sleep(self.send_command_delay)
 
-    def _set_socket_blocking_with_timeout(self, timeout: Union[None, int, float]):
+    def _set_socket_blocking_with_timeout(self, timeout: Union[None, int, float]) -> None:
         self._socket.setblocking(True)
         self._socket.settimeout(timeout)
 
@@ -369,7 +387,7 @@ class Vac248IpCamera(Vac248IpCameraBase):
         self._load_capture_packets_native_fn(native_library)
         return True
 
-    def _update_frame(self, num_frames: int):
+    def _update_frame(self, num_frames: int) -> None:
         """
         Updates frame using simple algorithm.
         NOTE: First frame from camera may be overexposed, so actual frames from camera
@@ -418,13 +436,12 @@ class Vac248IpCamera(Vac248IpCameraBase):
         if config_packet_index is not None:
             try:
                 packet_buffer_offset = config_packet_index * (_VAC248IP_CAMERA_DATA_PACKET_SIZE + 1)
-                self._apply_config(
-                    packet_buffers[packet_buffer_offset + 1:
-                                   packet_buffer_offset + 1 + _Vac248IpCameraConfig.PACKET_LENGTH])
+                self._apply_config(packet_buffers[packet_buffer_offset + 1:
+                                                  packet_buffer_offset + 1 + _Vac248IpCameraConfig.PACKET_LENGTH])
             except Exception:
                 pass
 
-    def _update_mean_frame(self, frames: int, num_frames: int):
+    def _update_mean_frame(self, frames: int, num_frames: int) -> None:
         """
         Updates mean frame using glue-mean algorithm.
         NOTE: First frame from camera may be overexposed, so actual frames from camera
@@ -491,7 +508,7 @@ class Vac248IpCamera(Vac248IpCameraBase):
             except Exception:
                 pass
 
-    def _update_smart_mean_frame(self, frames: int):
+    def _update_smart_mean_frame(self, frames: int) -> None:
         """
         Updates mean frame using smart algorithm.
         NOTE: First frame from camera may be overexposed, so actual frames from camera
@@ -540,8 +557,7 @@ class Vac248IpCamera(Vac248IpCameraBase):
 
             # Glue packet into current frame
             actual_packet_size = min(default_frame_data_size, frame_size - offset)
-            frame_buffers[frame_number, offset:offset + actual_packet_size] = \
-                packet_buffer[4:actual_packet_size + 4]
+            frame_buffers[frame_number, offset:offset + actual_packet_size] = packet_buffer[4:actual_packet_size + 4]
 
             frame_packets_received[frame_number, offset // default_frame_data_size] = True
 
@@ -555,8 +571,7 @@ class Vac248IpCamera(Vac248IpCameraBase):
             received_packets = frame_buffers[np.nonzero(frame_packets_received.transpose()[packet_index]),
                                              offset:offset + actual_packet_size]
             if received_packets.shape[1] > 0:
-                frame_buffer[offset:offset + actual_packet_size] = received_packets.mean(
-                    axis=1, dtype=np.uint16)
+                frame_buffer[offset:offset + actual_packet_size] = received_packets.mean(axis=1, dtype=np.uint16)
             else:
                 frame_buffer[offset:offset + actual_packet_size] = 0
 
@@ -565,14 +580,13 @@ class Vac248IpCamera(Vac248IpCameraBase):
         if config_packet_index is not None:
             try:
                 packet_buffer_offset = config_packet_index * (_VAC248IP_CAMERA_DATA_PACKET_SIZE + 1)
-                self._apply_config(
-                    packet_buffers[packet_buffer_offset + 1:
-                                   packet_buffer_offset + 1 + _Vac248IpCameraConfig.PACKET_LENGTH])
+                self._apply_config(packet_buffers[packet_buffer_offset + 1:
+                                                  packet_buffer_offset + 1 + _Vac248IpCameraConfig.PACKET_LENGTH])
             except Exception:
                 pass
 
-    def _update_frame_without_frame_number_update(self, num_frames: Optional[int] = None,
-                                                  attempts: Optional[int] = -1):
+    def _update_frame_without_frame_number_update(self, num_frames: Optional[int] = None, attempts: Optional[int] = -1
+                                                  ) -> None:
         """
         Updates frame as glued frame.
         """
@@ -589,7 +603,7 @@ class Vac248IpCamera(Vac248IpCameraBase):
         if exception is not None:
             raise exception
 
-    def open_device(self, attempts: Optional[int] = 10):
+    def open_device(self, attempts: Optional[int] = 10) -> None:
         if self._socket is None:
             exception = None
             for _ in self._attempts_sequence(attempts):
@@ -602,13 +616,12 @@ class Vac248IpCamera(Vac248IpCameraBase):
                 raise exception
             self._frame_number = 0
 
-    def close_device(self):
+    def close_device(self) -> None:
         if self._socket is not None:
             try:
                 self._send_command_stop()
             except Exception as exc:
-                self.logger.warning("When closing camera exception caught: %s", exc,
-                                    exc_info=sys.exc_info())
+                self.logger.warning("When closing camera exception caught: %s", exc, exc_info=sys.exc_info())
             finally:
                 self._socket.close()
                 self._socket = None
@@ -693,8 +706,10 @@ class _Vac248IpCameraConfig:
 
         if self.check_0 != _Vac248IpCameraConfig.CHECK_0 or self.check_1 != _Vac248IpCameraConfig.CHECK_1:
             raise ValueError("Incorrect check bytes")
-        if self.camera_id != _Vac248IpCameraConfig.CAMERA_ID:
-            raise ValueError("Camera not supported")
+        if (self.camera_id != _Vac248IpCameraConfig.CAMERA_ID) and (self.camera_id != _Vac251IpCameraConfig.CAMERA_ID):
+            raise ValueError("Camera ID {} not supported".format(
+                hex(self.camera_id)
+            ))
 
     def to_bytes(self) -> bytes:
         """
@@ -744,11 +759,14 @@ class _Vac248IpCameraConfig:
         return bytes((self.mac_0, self.mac_1, self.mac_2, self.mac_3, self.mac_4, self.mac_5))
 
 
+class _Vac251IpCameraConfig(_Vac248IpCameraConfig):
+    CAMERA_ID = 0xa
+
+
 class Cameras:
-    def __init__(self, addresses: List[str],
-                 video_format: Vac248IpVideoFormat = Vac248IpVideoFormat.FORMAT_960x600,
-                 num_frames: int = 1, open_attempts: int = 10,
-                 default_attempts: Optional[int] = None, allow_native_library: bool = True):
+    def __init__(self, addresses: List[str], video_format: Vac248IpVideoFormat = Vac248IpVideoFormat.FORMAT_960x600,
+                 num_frames: int = 1, open_attempts: int = 10, default_attempts: Optional[int] = None,
+                 allow_native_library: bool = True):
         self.__cameras = None
         self.__addresses = addresses
         self.__video_format = video_format
@@ -824,19 +842,16 @@ def vac248ip_main(args: List[str]) -> int:
                         format="%(asctime)s %(levelname)s  %(message)s", datefmt="%F %T")
     image_format = parsed_args.format
     update_frame_mode_by_name = {
-        "simple": lambda cam: cam.get_encoded_bitmap(num_frames=parsed_args.num_frames,
-                                                     image_format=image_format),
-        "mean": lambda cam: cam.get_encoded_mean_bitmap(frames=parsed_args.frames,
-                                                        num_frames=parsed_args.num_frames,
+        "simple": lambda cam: cam.get_encoded_bitmap(num_frames=parsed_args.num_frames, image_format=image_format),
+        "mean": lambda cam: cam.get_encoded_mean_bitmap(frames=parsed_args.frames, num_frames=parsed_args.num_frames,
                                                         image_format=image_format),
-        "smart": lambda cam: cam.get_encoded_smart_mean_bitmap(frames=parsed_args.frames,
-                                                               image_format=image_format)
+        "smart": lambda cam: cam.get_encoded_smart_mean_bitmap(frames=parsed_args.frames, image_format=image_format)
     }
     mode = parsed_args.mode.lower()
     get_bitmap_fn = update_frame_mode_by_name.get(mode)
     if get_bitmap_fn is None:
-        print("Incorrect mode: '{}', expected one of: 'simple' (default), 'mean', 'smart'".
-              format(parsed_args.mode), file=sys.stderr)
+        print("Incorrect mode: '{}', expected one of: 'simple' (default), 'mean', 'smart'".format(parsed_args.mode),
+              file=sys.stderr)
         return 1
     if parsed_args.debug:
         line_1_end = "\n"
@@ -847,8 +862,7 @@ def vac248ip_main(args: List[str]) -> int:
 
     with Cameras(addresses=parsed_args.addresses, video_format=Vac248IpVideoFormat.FORMAT_1920x1200,
                  num_frames=parsed_args.num_frames, open_attempts=parsed_args.open_attempts,
-                 default_attempts=parsed_args.attempts,
-                 allow_native_library=not parsed_args.deny_native) as cameras:
+                 default_attempts=parsed_args.attempts, allow_native_library=not parsed_args.deny_native) as cameras:
         for camera in cameras:
             if camera.native_library_used:
                 print("Native library used.")
@@ -858,16 +872,16 @@ def vac248ip_main(args: List[str]) -> int:
         count = parsed_args.count
         for attempt_number in range(count):
             for camera_number, camera in enumerate(cameras):
-                print("Attempt #{:0>3d}, camera #{:0>3d}...".format(attempt_number, camera_number),
-                      end=line_1_end, flush=True)
+                print("Attempt #{:0>3d}, camera #{:0>3d}...".format(attempt_number, camera_number), end=line_1_end,
+                      flush=True)
                 start_time = time.monotonic()
                 bitmap, frame_number = get_bitmap_fn(camera)
                 frame_get_time = time.monotonic() - start_time
 
-                bitmap_name = "bitmap_m{}_a{:0>3d}_c{:0>3d}_f{:0>3d}.{}".\
-                    format(mode, attempt_number, camera_number, frame_number, image_format)
-                print("{}Got frame #{:0>3d}, {:.6f} s. File: {}".
-                      format(line_2_prefix, frame_number, frame_get_time, bitmap_name), flush=True)
+                bitmap_name = "bitmap_m{}_a{:0>3d}_c{:0>3d}_f{:0>3d}.{}".format(mode, attempt_number, camera_number,
+                                                                                frame_number, image_format)
+                print("{}Got frame #{:0>3d}, {:.6f} s. File: {}".format(line_2_prefix, frame_number, frame_get_time,
+                                                                        bitmap_name), flush=True)
                 with open(bitmap_name, "wb") as file:
                     file.write(bitmap)
     return 0

@@ -1,5 +1,5 @@
 import sys
-from vac248ip import vac248ip_main
+from .vac248ip import vac248ip_main
 
 
 if __name__ == "__main__":
